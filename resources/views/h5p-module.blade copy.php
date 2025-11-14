@@ -51,7 +51,7 @@
 		const el = document.getElementById("h5p-container");
 
 		const options = {
-			id: 'activityId', // set a known id for content (used for state lookups)
+			id: 'activity', // set a known id for content (used for state lookups)
 			h5pJsonPath: "/h5p/activity",
 			frameJs: "/h5p/h5p-standalone/dist/frame.bundle.js",
 			frameCss: "/h5p/h5p-standalone/dist/styles/h5p.css",
@@ -70,15 +70,8 @@
 			customJs: '{{ asset("js/h5p/custom-h5p.js") }}', // Can be a single string or an array of strings
 		};
 
-
-		new H5PStandalone.H5P(el, options).then(function () {
-			H5P.externalDispatcher.on("xAPI", (event) => {
-				//do something useful with the event
-				//console.log("options: ", options);
-				// console.log( window.H5PIntegration.contents[`cid-${options.id}`].contentUserData );
-			});
-		});
-
+		new H5PStandalone.H5P(el, options);
+		
 	});
 </script>
 

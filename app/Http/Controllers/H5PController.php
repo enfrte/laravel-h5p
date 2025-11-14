@@ -13,6 +13,22 @@ class H5PController extends Controller
      */
     public function recordInteraction(Request $request): JsonResponse
     {
+        $data = $request->json()->all();
+
+        if (!$data || !is_array($data)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid data format',
+                'data' => $data
+            ], 400);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'New test',
+            'data' => $data
+        ]);
+
         // Get student_id and content_id from headers, query params, or session
         $studentId = $request->header('X-Student-ID') 
             ?? $request->input('student_id') 
