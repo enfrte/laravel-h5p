@@ -10,9 +10,12 @@ return new class extends Migration
     {
         Schema::create('h5p_responses', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('interaction_id')
-                ->constrained('h5p_interactions')
-                ->onDelete('cascade');
+            // store interaction id as plain integer (no FK constraint)
+            $table->string('context_parent_id');
+            // store user and course as strings (no users/courses tables)
+            $table->string('student');
+            $table->string('course');
+
             $table->string('question_id');
             $table->text('question_text')->nullable();
             $table->string('interaction_type');
@@ -21,8 +24,10 @@ return new class extends Migration
             $table->json('correct_responses_pattern')->nullable();
             $table->timestamps();
             
-            $table->index(['interaction_id', 'question_id']);
+            $table->index(['context_parent_id', 'question_id']);
             $table->index('is_correct');
+            $table->index('student');
+            $table->index('course');
         });
     }
 

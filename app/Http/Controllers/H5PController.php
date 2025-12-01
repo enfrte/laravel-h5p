@@ -8,6 +8,7 @@ use App\Services\H5PResponseParser;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use App\Exceptions\SkipMissingData;
 
 class H5PController extends Controller
 {
@@ -20,21 +21,21 @@ class H5PController extends Controller
 
 	// Attempt to store bundled questions and state data from H5P
 	public function recordQuestionAnswerCollection(Request $request): JsonResponse {
-		[$studentId, $contentId] = $this->responseParser->extractIds($request);		
-		$data = $this->responseParser->handleDataField($request);
 		
 		try {
-			$interaction = DB::transaction(function () use ($studentId, $contentId, $data) {
-				$interaction = H5PInteraction::recordInteraction(
-					$studentId,
-					$contentId,
-					$data
-				);
+			$interaction = DB::transaction(function () use ($request) {
+				// $interaction = H5PInteraction::recordInteraction(
+				// 	$studentId,
+				// 	$contentId,
+				// 	$data
+				// );
 
-				// Parse and store individual question responses using service
-				$this->responseParser->parseAndStore($interaction, $data);
+				// // Parse and store individual question responses using service
+				// $this->responseParser->parseAndStore($data);
 			
-				return $interaction;
+				// return $interaction;
+
+				return $this->responseParser->parseAndStore($request);
 			});
 
 			return response()->json([
@@ -44,7 +45,16 @@ class H5PController extends Controller
 					: 'Interaction recorded',
 				'data' => $interaction
 			]);
-		} catch (\Exception $e) {
+		} 
+		catch (SkipMissingData $e) {
+			// Gracefully handle missing data without failing the whole transaction
+			return response()->json([
+				'success' => false,
+				'message' => 'Incomplete data, skipping storage of question responses',
+				'error' => $e->getMessage()
+			], 400);
+		}
+		catch (\Exception $e) {
 			return response()->json([
 				'success' => false,
 				'message' => 'Failed to record question answer collection',
@@ -54,39 +64,40 @@ class H5PController extends Controller
 	}
 	
 	/**
-	 * Record an H5P interaction from frontend
+	 * Record an H5P interaction from frontend - an interaction is a save point, but might not have reliable completion data. 
 	 */
 	public function recordInteraction(Request $request): JsonResponse
 	{
-		[$studentId, $contentId] = $this->responseParser->extractIds($request);
-		$data = $this->responseParser->handleDataField($request);
+		return response()->json([], 200);
+
+		// $data = $this->responseParser->handleDataField($request);
 		
-		try {
-			$interaction = DB::transaction(function () use ($studentId, $contentId, $data) {
-				$interaction = H5PInteraction::recordInteraction(
-					$studentId,
-					$contentId,
-					$data
-				);
+		// try {
+		// 	$interaction = DB::transaction(function () use ($studentId, $contentId, $data) {
+		// 		$interaction = H5PInteraction::recordInteraction(
+		// 			$studentId,
+		// 			$contentId,
+		// 			$data
+		// 		);
 				
-				return $interaction;
-			});
+		// 		return $interaction;
+		// 	});
 			
-			return response()->json([
-				'success' => true,
-				'message' => $interaction->completed 
-					? 'Interaction already completed' 
-					: 'Interaction recorded',
-				'data' => $interaction
-			]);
+		// 	return response()->json([
+		// 		'success' => true,
+		// 		'message' => $interaction->completed 
+		// 			? 'Interaction already completed' 
+		// 			: 'Interaction recorded',
+		// 		'data' => $interaction
+		// 	]);
 			
-		} catch (\Exception $e) {
-			return response()->json([
-				'success' => false,
-				'message' => 'Failed to record interaction',
-				'error' => $e->getMessage()
-			], 500);
-		}
+		// } catch (\Exception $e) {
+		// 	return response()->json([
+		// 		'success' => false,
+		// 		'message' => 'Failed to record interaction',
+		// 		'error' => $e->getMessage()
+		// 	], 500);
+		// }
 	}
 	
 	/**

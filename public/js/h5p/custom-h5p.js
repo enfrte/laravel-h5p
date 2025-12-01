@@ -34,6 +34,7 @@ function findState(obj) {
 }
 
 H5P.externalDispatcher.on('xAPI', (event) => {
+	
 	const url = window.H5PIntegration['url'];
 	const savedUserState = window.H5PIntegration.contents[`cid-${url}`].contentUserData;
 
@@ -91,7 +92,7 @@ H5P.externalDispatcher.on('xAPI', (event) => {
 		responceObject['state'] = foundSavedUserState;
 	}
 
-	if ( verb.includes('answered') || foundSavedUserState ) {
+	if ( verb.includes('answered') ) {
 		//console.log(H5PIntegration);
 		
 		console.log('responceObject', responceObject);

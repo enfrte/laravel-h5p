@@ -3,14 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class H5PResponse extends Model
 {
     protected $table = 'h5p_responses';
     
     protected $fillable = [
-        'interaction_id',
+        'context_parent_id',
+        'student',
+        'course',
         'question_id',
         'question_text',
         'interaction_type',
@@ -26,18 +27,12 @@ class H5PResponse extends Model
     ];
     
     /**
-     * Get the interaction this response belongs to
-     */
-    public function interaction(): BelongsTo
-    {
-        return $this->belongsTo(H5PInteraction::class, 'interaction_id');
-    }
-    
-    /**
      * Store a question response
      */
     public static function storeResponse(
-        int $interactionId,
+        string $student,
+        string $course,
+        string $contextParentId,
         string $questionId,
         string $interactionType,
         $response,
@@ -45,9 +40,22 @@ class H5PResponse extends Model
         ?bool $isCorrect = null,
         $correctResponsesPattern = null
     ): self {
+        // // Prevent overwriting a correct response with an incorrect one
+        // $existing = self::where('student', $student)
+        //     ->where('course', $course)
+        //     ->where('context_parent_id', $contextParentId)
+        //     ->where('question_id', $questionId)
+        //     ->first();
+
+        // if ($existing && $existing->is_correct) {
+        //     return $existing;
+        // }
+
         return self::updateOrCreate(
             [
-                'interaction_id' => $interactionId,
+                'student' => $student,
+                'course' => $course,
+                'context_parent_id' => $contextParentId,
                 'question_id' => $questionId
             ],
             [
@@ -61,31 +69,20 @@ class H5PResponse extends Model
     }
     
     /**
-     * Get all responses for an interaction
+     * Get all responses for an interaction (optional student/course filters)
      */
-    public static function getByInteraction(int $interactionId)
+    public static function getByInteraction(string $contextParentId, ?string $student = null, ?string $course = null)
     {
-        return self::where('interaction_id', $interactionId)
-            ->orderBy('created_at', 'asc')
-            ->get();
-    }
-    
-    /**
-     * Get response statistics for an interaction
-     */
-    public static function getStatistics(int $interactionId): array
-    {
-        $responses = self::where('interaction_id', $interactionId)->get();
-        
-        $total = $responses->count();
-        $correct = $responses->where('is_correct', true)->count();
-        $incorrect = $responses->where('is_correct', false)->count();
-        
-        return [
-            'total' => $total,
-            'correct' => $correct,
-            'incorrect' => $incorrect,
-            'accuracy' => $total > 0 ? round(($correct / $total) * 100, 2) : 0
-        ];
+        $query = self::where('context_parent_id', $contextParentId);
+
+        if ($student !== null) {
+            $query->where('student', $student);
+        }
+
+        if ($course !== null) {
+            $query->where('course', $course);
+        }
+
+        return $query->orderBy('created_at', 'asc')->get();
     }
 }
